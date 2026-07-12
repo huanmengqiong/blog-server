@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - 我的博客</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 目录导航 */
+        .toc-container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .toc-container h4 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .toc-container a {
+            display: block;
+            padding: 6px 0;
+            font-size: 14px;
+            color: #555;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            padding-left: 12px;
+        }
+        .toc-container a:hover {
+            color: #3498db;
+            border-left-color: #3498db;
+            background: #f0f8ff;
+            text-decoration: none;
+            padding-left: 16px;
+        }
+        .toc-container a.toc-h2 { padding-left: 12px; }
+        .toc-container a.toc-h3 { padding-left: 28px; font-size: 13px; }
+
+        /* 作者卡片 */
+        .author-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .author-card img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .author-card .author-info h4 {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        .author-card .author-info p {
+            font-size: 13px;
+            color: #95a5a6;
+            line-height: 1.5;
+        }
+
+        /* 文章操作栏 */
+        .article-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .article-actions button {
+            padding: 8px 18px;
+            border: 2px solid #e0e0e0;
+            background: #fff;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .article-actions button:hover {
+            border-color: #3498db;
+            color: #3498db;
+            background: #f0f8ff;
+        }
+        .article-actions button.liked {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        /* 回复评论 */
+        .reply-form {
+            margin-top: 12px;
+            margin-left: 40px;
+            display: flex;
+            gap: 8px;
+        }
+        .reply-form textarea {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 40px;
+            font-family: inherit;
+        }
+        .reply-form textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .reply-form button {
+            align-self: flex-end;
+            padding: 6px 16px;
+            background: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        /* 子评论 */
+        .sub-comments {
+            margin-left: 40px;
+            margin-top: 12px;
+            padding-left: 16px;
+            border-left: 2px solid #f0f0f0;
+        }
+
+        /* 相关文章 */
+        .related-articles {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .related-articles h4 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .related-articles a {
+            display: block;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #555;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .related-articles a:hover {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .related-articles a:last-child {
+            border-bottom: none;
+        }
+
+        /* Toast 复制成功 */
+        .copy-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 9999;
+            animation: fadeInOut 2s ease;
+            pointer-events: none;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="container">
+        <!-- 文章操作栏 -->
+        <div class="article-actions" id="articleActions" style="display:none;"></div>
+
+        <!-- 目录导航 -->
+        <div class="toc-container" id="tocContainer" style="display:none;">
+            <h4>📑 文章目录</h4>
+            <div id="tocContent"></div>
+        </div>
+
+        <!-- 作者卡片 -->
+        <div class="author-card" id="authorCard" style="display:none;"></div>
+
+        <!-- 文章详情 -->
+        <div id="articleDetail">
+            <div class="loading">加载中</div>
+        </div>
+
+        <!-- 相关文章 -->
+        <div class="related-articles" id="relatedArticles" style="display:none;">
+            <h4>📖 相关文章</h4>
+            <div id="relatedContent"></div>
+        </div>
+
+        <!-- 评论区 -->
+        <div class="comment-section">
+            <h3>💬 评论区 (<span id="commentCount">0</span>)</h3>
+            <div id="commentList">
+                <div class="loading">加载评论中</div>
+            </div>
+            <div class="comment-form" id="commentForm" style="display:none;">
+                <textarea id="commentInput" placeholder="写下你的想法..."></textarea>
+                <button onclick="submitComment()">📩 发表评论</button>
+            </div>
+            <p id="loginHint" style="text-align:center;color:#95a5a6;font-size:14px;margin-top:16px;">
+                🔐 <a href="login.html">登录</a> 后可以发表评论
+            </p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 我的博客 | <a href="index.html">返回首页</a></p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let articleId = null;
+        let articleData = null;
+        let likeCount = 0;
+        let isLiked = false;
+
+        async function init() {
+            renderNavbar();
+            articleId = getUrlParam('id');
+
+            if (!articleId) {
+                document.getElementById('articleDetail').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📄</div>
+                        <p>文章不存在</p>
+                    </div>`;
+                return;
+            }
+
+            await loadArticle();
+            await loadComments();
+            await loadRelatedArticles();
+
+            if (isLoggedIn()) {
+                document.getElementById('commentForm').style.display = 'flex';
+                document.getElementById('loginHint').style.display = 'none';
+            }
+
+            // 从 localStorage 读取点赞状态
+            isLiked = localStorage.getItem(`liked_${articleId}`) === 'true';
+            likeCount = parseInt(localStorage.getItem(`likes_${articleId}`) || '0');
+        }
+
+        async function loadArticle() {
+            const res = await ArticleAPI.getDetail(articleId);
+
+            if (res.success) {
+                articleData = res.data;
+                document.title = articleData.title + ' - 我的博客';
+                
+                // 渲染文章内容
+                document.getElementById('articleDetail').innerHTML = `
+                    <div class="article-detail">
+                        <h1>${escapeHtml(articleData.title)}</h1>
+                        <div class="meta">
+                            <span>👤 ${escapeHtml(articleData.author.username)}</span>
+                            <span>📁 ${articleData.category ? escapeHtml(articleData.category.name) : '未分类'}</span>
+                            <span>📅 ${formatTime(articleData.createdAt)}</span>
+                            <span>👁 ${articleData.viewCount} 阅读</span>
+                            ${articleData.tags && articleData.tags.length > 0 ? articleData.tags.map(tag => 
+                                `<span class="tag">${escapeHtml(tag.name)}</span>`
+                            ).join(' ') : ''}
+                        </div>
+                        <div class="content" id="articleContent">${formatContent(articleData.content)}</div>
+                    </div>
+                `;
+
+                // 渲染操作栏
+                renderActions();
+
+                // 渲染目录
+                renderTOC();
+
+                // 渲染作者卡片
+                renderAuthorCard();
+
+            } else {
+                document.getElementById('articleDetail').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">😕</div>
+                        <p>文章加载失败</p>
+                        <p class="sub">${res.message}</p>
+                    </div>`;
+            }
+        }
+
+        // 渲染操作栏
+        function renderActions() {
+            const container = document.getElementById('articleActions');
+            const currentUser = getUserInfo();
+            const isAuthor = currentUser && currentUser.id === articleData.author.id;
+
+            container.style.display = 'flex';
+            container.innerHTML = `
+                <button onclick="goBack()" title="返回列表">← 返回</button>
+                <button onclick="toggleLike()" class="${isLiked ? 'liked' : ''}" id="likeBtn" title="点赞">
+                    ${isLiked ? '❤️' : '🤍'} <span id="likeCountText">${likeCount > 0 ? likeCount : ''}</span>
+                </button>
+                <button onclick="shareArticle()" title="分享">🔗 分享</button>
+                ${isAuthor ? `<button onclick="editArticle()" title="编辑">✏️ 编辑</button>` : ''}
+                ${isAuthor ? `<button onclick="deleteThisArticle()" title="删除" style="color:#e74c3c;">🗑️ 删除</button>` : ''}
+            `;
+        }
+
+        // 渲染目录
+        function renderTOC() {
+            const contentEl = document.getElementById('articleContent');
+            if (!contentEl) return;
+
+            const headings = contentEl.querySelectorAll('h2, h3');
+            if (headings.length === 0) return;
+
+            const tocContainer = document.getElementById('tocContainer');
+            const tocContent = document.getElementById('tocContent');
+            tocContainer.style.display = 'block';
+
+            let html = '';
+            headings.forEach((h, i) => {
+                const id = `heading-${i}`;
+                h.id = id;
+                const level = h.tagName.toLowerCase();
+                html += `<a href="#${id}" class="toc-${level}">${h.textContent}</a>`;
+            });
+            tocContent.innerHTML = html;
+        }
+
+        // 渲染作者卡片
+        function renderAuthorCard() {
+            const card = document.getElementById('authorCard');
+            card.style.display = 'flex';
+            card.innerHTML = `
+                <img src="${getAvatarUrl(articleData.author.username, 60)}" 
+                     onerror="this.src='data:image/svg+xml,${encodeURIComponent('<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23ddd%22 width=%2260%22 height=%2260%22 rx=%2230%22/></svg>')}'">
+                <div class="author-info">
+                    <h4>${escapeHtml(articleData.author.username)}</h4>
+                    <p>${escapeHtml(articleData.author.bio || '这个人很懒，什么都没写...')}</p>
+                    <p style="font-size:12px;color:#bbb;margin-top:4px;">📅 ${formatTime(articleData.createdAt)} 发布</p>
+                </div>
+            `;
+        }
+
+        // 加载相关文章
+        async function loadRelatedArticles() {
+            if (!articleData || !articleData.category) return;
+
+            const res = await ArticleAPI.getList({ 
+                page: 1, 
+                limit: 5, 
+                categoryId: articleData.category.id 
+            });
+
+            if (res.success) {
+                const related = res.data.list.filter(a => a.id !== parseInt(articleId));
+                
+                if (related.length === 0) return;
+
+                const container = document.getElementById('relatedArticles');
+                const content = document.getElementById('relatedContent');
+                container.style.display = 'block';
+                content.innerHTML = related.map(a => `
+                    <a href="detail.html?id=${a.id}">📄 ${escapeHtml(a.title)}</a>
+                `).join('');
+            }
+        }
+
+        // 加载评论
+        async function loadComments() {
+            const res = await CommentAPI.getByArticle(articleId);
+
+            if (res.success) {
+                const container = document.getElementById('commentList');
+                document.getElementById('commentCount').textContent = res.data.length;
+
+                if (res.data.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align:center;padding:30px;color:#bbb;">
+                            <div style="font-size:40px;margin-bottom:12px;">💭</div>
+                            <p>还没有评论，快来发表第一条评论吧</p>
+                        </div>`;
+                    return;
+                }
+
+                const currentUser = getUserInfo();
+
+                // 分离父评论和子评论
+                const parentComments = res.data.filter(c => !c.parentId);
+                const childComments = res.data.filter(c => c.parentId);
+
+                container.innerHTML = parentComments.map(comment => {
+                    const isOwner = currentUser && currentUser.id === comment.user.id;
+                    const replies = childComments.filter(c => c.parentId === comment.id);
+                    
+                    return `
+                        <div class="comment-item" id="comment-${comment.id}">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                                <div>
+                                    <span class="comment-user">👤 ${escapeHtml(comment.user.username)}</span>
+                                    <span class="comment-time">${formatRelativeTime(comment.createdAt)}</span>
+                                </div>
+                                <div style="display:flex;gap:8px;">
+                                    ${isLoggedIn() ? `<span onclick="showReplyForm(${comment.id})" style="cursor:pointer;font-size:12px;color:#3498db;">💬 回复</span>` : ''}
+                                    ${isOwner ? `<span onclick="deleteComment(${comment.id})" style="cursor:pointer;font-size:12px;color:#e74c3c;">🗑️ 删除</span>` : ''}
+                                </div>
+                            </div>
+                            <p class="comment-content">${escapeHtml(comment.content)}</p>
+                            ${replies.length > 0 ? `
+                                <div class="sub-comments">
+                                    ${replies.map(reply => {
+                                        const isReplyOwner = currentUser && currentUser.id === reply.user.id;
+                                        return `
+                                            <div class="comment-item" style="border-bottom:none;padding:8px 0;">
+                                                <div style="display:flex;justify-content:space-between;">
+                                                    <span class="comment-user" style="font-size:13px;">👤 ${escapeHtml(reply.user.username)}</span>
+                                                    ${isReplyOwner ? `<span onclick="deleteComment(${reply.id})" style="cursor:pointer;font-size:11px;color:#e74c3c;">🗑️</span>` : ''}
+                                                </div>
+                                                <p class="comment-content" style="font-size:13px;">${escapeHtml(reply.content)}</p>
+                                                <span class="comment-time" style="font-size:11px;">${formatRelativeTime(reply.createdAt)}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="reply-form" id="replyForm-${comment.id}" style="display:none;">
+                                <textarea id="replyInput-${comment.id}" placeholder="回复 ${escapeHtml(comment.user.username)}..."></textarea>
+                                <button onclick="submitReply(${comment.id})">回复</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 发表评论
+        async function submitComment() {
+            const content = document.getElementById('commentInput').value.trim();
+            if (!content) {
+                showToast('请输入评论内容', 'warning');
+                return;
+            }
+
+            const res = await CommentAPI.create({
+                content: content,
+                articleId: parseInt(articleId),
+            });
+
+            if (res.success) {
+                document.getElementById('commentInput').value = '';
+                showToast('评论发表成功', 'success');
+                await loadComments();
+            } else {
+                showToast('评论失败: ' + res.message, 'error');
+            }
+        }
+
+        // 显示回复框
+        function showReplyForm(commentId) {
+            const form = document.getElementById(`replyForm-${commentId}`);
+            if (form) {
+                form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+                if (form.style.display === 'flex') {
+                    document.getElementById(`replyInput-${commentId}`).focus();
+                }
+            }
+        }
+
+        // 提交回复
+        async function submitReply(parentId) {
+            const content = document.getElementById(`replyInput-${parentId}`).value.trim();
+            if (!content) {
+                showToast('请输入回复内容', 'warning');
+                return;
+            }
+
+            const res = await CommentAPI.create({
+                content: content,
+                articleId: parseInt(articleId),
+                parentId: parentId,
+            });
+
+            if (res.success) {
+                showToast('回复成功', 'success');
+                await loadComments();
+            } else {
+                showToast('回复失败: ' + res.message, 'error');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(id) {
+            if (!confirm('确定要删除这条评论吗？')) return;
+
+            const res = await CommentAPI.remove(id);
+            if (res.success) {
+                showToast('评论已删除', 'success');
+                await loadComments();
+            } else {
+                showToast('删除失败: ' + res.message, 'error');
+            }
+        }
+
+        // 点赞
+        function toggleLike() {
+            isLiked = !isLiked;
+            likeCount += isLiked ? 1 : -1;
+            if (likeCount < 0) likeCount = 0;
+
+            localStorage.setItem(`liked_${articleId}`, isLiked);
+            localStorage.setItem(`likes_${articleId}`, likeCount);
+
+            const btn = document.getElementById('likeBtn');
+            const countText = document.getElementById('likeCountText');
+            btn.className = isLiked ? 'liked' : '';
+            btn.innerHTML = `${isLiked ? '❤️' : '🤍'} <span id="likeCountText">${likeCount > 0 ? likeCount : ''}</span>`;
+            
+            showToast(isLiked ? '已点赞' : '已取消点赞', 'info');
+        }
+
+        // 分享
+        function shareArticle() {
+            const url = window.location.href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showCopyToast();
+                });
+            } else {
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showCopyToast();
+            }
+        }
+
+        function showCopyToast() {
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = '✅ 链接已复制';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // 编辑文章
+        function editArticle() {
+            window.location.href = `publish.html?id=${articleId}`;
+        }
+
+        // 删除文章
+        async function deleteThisArticle() {
+            if (!confirm('确定要删除这篇文章吗？此操作不可恢复。')) return;
+
+            const res = await ArticleAPI.remove(articleId);
+            if (res.success) {
+                showToast('文章已删除', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                showToast('删除失败: ' + res.message, 'error');
+            }
+        }
+
+        // 返回
+        function goBack() {
+            window.history.back();
+        }
+
+        // 格式化内容（支持 Markdown 基础语法）
+        function formatContent(content) {
+            if (!content) return '';
+            return content
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>')
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+                .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        init();
+    </script>
+</body>
+</html>

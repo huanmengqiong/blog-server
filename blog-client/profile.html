@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 我的博客</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 头像区域 */
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .profile-header .avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            border: 4px solid #fff;
+        }
+        .profile-header h2 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        .profile-header .email-display {
+            font-size: 14px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .profile-header .email-display:hover {
+            color: #3498db;
+        }
+
+        /* 统计概览 */
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .profile-stat-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .profile-stat-item:hover {
+            transform: translateY(-2px);
+        }
+        .profile-stat-item .stat-num {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .profile-stat-item .stat-label {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 4px;
+        }
+
+        /* 文章状态标签 */
+        .article-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-published { background: #e8f5e9; color: #2e7d32; }
+        .status-draft { background: #fff3e0; color: #e65100; }
+
+        /* 分页 */
+        .mini-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 16px;
+        }
+        .mini-pagination button {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .mini-pagination button:hover {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+        .mini-pagination button.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        /* 密码强度 */
+        .pwd-strength-bar {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s;
+            margin-top: 4px;
+        }
+
+        /* 密码显隐 */
+        .pwd-wrapper {
+            position: relative;
+        }
+        .pwd-wrapper input {
+            padding-right: 45px;
+        }
+        .pwd-wrapper .toggle-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: #999;
+            user-select: none;
+        }
+        .pwd-wrapper .toggle-icon:hover {
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="container">
+        <div style="max-width:650px;margin:0 auto;">
+            
+            <!-- 头像和基本信息 -->
+            <div class="publish-card" style="margin-bottom:20px;">
+                <div class="profile-header">
+                    <img class="avatar-large" id="profileAvatar" src="" alt="头像">
+                    <h2 id="profileName">加载中...</h2>
+                    <p class="email-display" id="profileEmail" title="点击复制邮箱" onclick="copyEmail()"></p>
+                    <p style="color:#95a5a6;font-size:13px;margin-top:4px;" id="profileBio"></p>
+                </div>
+
+                <!-- 统计 -->
+                <div class="profile-stats">
+                    <div class="profile-stat-item">
+                        <div class="stat-num" id="statArticles">-</div>
+                        <div class="stat-label">📄 文章</div>
+                    </div>
+                    <div class="profile-stat-item">
+                        <div class="stat-num" id="statViews">-</div>
+                        <div class="stat-label">👁️ 总阅读</div>
+                    </div>
+                    <div class="profile-stat-item">
+                        <div class="stat-num" id="statComments">-</div>
+                        <div class="stat-label">💬 评论</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编辑资料 -->
+            <div class="publish-card" style="margin-bottom:20px;">
+                <h3 style="margin-bottom:16px;color:#2c3e50;">✏️ 编辑资料</h3>
+                <div class="success-message" id="successMsg"></div>
+                <div class="error-message" id="errorMsg"></div>
+
+                <div class="form-group">
+                    <label>👤 用户名</label>
+                    <input type="text" id="username" placeholder="请输入用户名">
+                </div>
+
+                <div class="form-group">
+                    <label>📧 邮箱</label>
+                    <input type="email" id="email" disabled style="background:#f5f5f5;color:#999;">
+                </div>
+
+                <div class="form-group">
+                    <label>📝 个人简介</label>
+                    <textarea id="bio" placeholder="介绍一下自己..." style="min-height:80px;"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="saveProfileBtn" onclick="updateProfile()">💾 保存修改</button>
+                </div>
+            </div>
+
+            <!-- 修改密码 -->
+            <div class="publish-card" style="margin-bottom:20px;">
+                <h3 style="margin-bottom:16px;color:#2c3e50;">🔒 修改密码</h3>
+                <div class="success-message" id="pwdSuccessMsg"></div>
+                <div class="error-message" id="pwdErrorMsg"></div>
+
+                <div class="form-group">
+                    <label>原密码</label>
+                    <div class="pwd-wrapper">
+                        <input type="password" id="oldPassword" placeholder="请输入原密码">
+                        <span class="toggle-icon" onclick="togglePwd('oldPassword', this)">👁️</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>新密码</label>
+                    <div class="pwd-wrapper">
+                        <input type="password" id="newPassword" placeholder="请输入新密码（至少6位）">
+                        <span class="toggle-icon" onclick="togglePwd('newPassword', this)">👁️</span>
+                    </div>
+                    <div class="pwd-strength-bar" id="pwdStrength" style="width:0;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <div class="pwd-wrapper">
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                        <span class="toggle-icon" onclick="togglePwd('confirmPassword', this)">👁️</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="updatePwdBtn" onclick="updatePassword()">🔐 修改密码</button>
+                </div>
+            </div>
+
+            <!-- 我的文章 -->
+            <div class="publish-card">
+                <h3 style="margin-bottom:16px;color:#2c3e50;">📄 我的文章</h3>
+                <div id="myArticles" style="color:#999;">加载中...</div>
+                <div class="mini-pagination" id="articlePages"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 我的博客 | <a href="index.html">返回首页</a></p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let allMyArticles = [];
+        let myArticlePage = 1;
+        const pageSize = 5;
+
+        async function init() {
+            renderNavbar();
+
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            await loadProfile();
+            await loadMyArticles();
+
+            // 密码强度监听
+            document.getElementById('newPassword').addEventListener('input', updateStrength);
+        }
+
+        // 密码显隐
+        function togglePwd(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        }
+
+        // 密码强度
+        function updateStrength() {
+            const val = document.getElementById('newPassword').value;
+            const bar = document.getElementById('pwdStrength');
+            if (!val) {
+                bar.style.width = '0';
+            } else if (val.length < 6) {
+                bar.style.width = '30%';
+                bar.style.background = '#e74c3c';
+            } else if (val.length < 10) {
+                bar.style.width = '60%';
+                bar.style.background = '#f39c12';
+            } else {
+                bar.style.width = '100%';
+                bar.style.background = '#2ecc71';
+            }
+        }
+
+        // 加载个人信息
+        async function loadProfile() {
+            const res = await UserAPI.getProfile();
+            
+            if (res.success) {
+                const user = res.data;
+                document.getElementById('profileAvatar').src = getAvatarUrl(user.username, 100);
+                document.getElementById('profileName').textContent = user.username;
+                document.getElementById('profileEmail').textContent = '📧 ' + user.email;
+                document.getElementById('profileBio').textContent = user.bio || '这个人很懒，什么都没写...';
+                document.getElementById('username').value = user.username || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('bio').value = user.bio || '';
+            }
+        }
+
+        // 复制邮箱
+        function copyEmail() {
+            const email = document.getElementById('email').value;
+            if (email && navigator.clipboard) {
+                navigator.clipboard.writeText(email).then(() => {
+                    showToast('邮箱已复制', 'success');
+                });
+            }
+        }
+
+        // 加载我的文章
+        async function loadMyArticles() {
+            const res = await ArticleAPI.getList({ page: 1, limit: 100 });
+            
+            if (res.success) {
+                const currentUser = getUserInfo();
+                allMyArticles = res.data.list.filter(
+                    article => article.author.id === currentUser.id
+                );
+
+                // 更新统计
+                document.getElementById('statArticles').textContent = allMyArticles.length;
+                const totalViews = allMyArticles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
+                document.getElementById('statViews').textContent = totalViews;
+                // 评论数暂不计算，可以后续加 API
+                document.getElementById('statComments').textContent = '-';
+
+                renderMyArticlesPage();
+            }
+        }
+
+        function renderMyArticlesPage() {
+            const container = document.getElementById('myArticles');
+            const totalPages = Math.ceil(allMyArticles.length / pageSize);
+            const start = (myArticlePage - 1) * pageSize;
+            const pageArticles = allMyArticles.slice(start, start + pageSize);
+
+            if (allMyArticles.length === 0) {
+                container.innerHTML = '<p style="text-align:center;padding:20px;color:#bbb;">📭 还没有发布文章<br><a href="publish.html">去写一篇</a></p>';
+                document.getElementById('articlePages').innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = pageArticles.map(article => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+                    <div style="flex:1;min-width:0;">
+                        <a href="detail.html?id=${article.id}" style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%;">
+                            ${escapeHtml(article.title)}
+                        </a>
+                        <span class="article-status status-${article.status || 'published'}">${article.status === 'draft' ? '草稿' : '已发布'}</span>
+                        <br><span style="color:#bbb;font-size:11px;">${formatTime(article.createdAt)} · 👁 ${article.viewCount}</span>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:center;flex-shrink:0;margin-left:12px;">
+                        <a href="publish.html?id=${article.id}" style="font-size:13px;color:#3498db;text-decoration:none;" title="编辑">✏️</a>
+                        <a href="javascript:void(0)" onclick="deleteArticle(${article.id})" style="font-size:13px;color:#e74c3c;text-decoration:none;" title="删除">🗑️</a>
+                    </div>
+                </div>
+            `).join('');
+
+            // 分页
+            const pageContainer = document.getElementById('articlePages');
+            if (totalPages > 1) {
+                let html = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    html += `<button class="${i === myArticlePage ? 'active' : ''}" onclick="goArticlePage(${i})">${i}</button>`;
+                }
+                pageContainer.innerHTML = html;
+            } else {
+                pageContainer.innerHTML = '';
+            }
+        }
+
+        function goArticlePage(page) {
+            myArticlePage = page;
+            renderMyArticlesPage();
+        }
+
+        // 删除文章
+        async function deleteArticle(id) {
+            if (!confirm('确定要删除这篇文章吗？此操作不可恢复。')) return;
+
+            const res = await ArticleAPI.remove(id);
+            if (res.success) {
+                showToast('文章已删除', 'success');
+                allMyArticles = allMyArticles.filter(a => a.id !== id);
+                if (myArticlePage > Math.ceil(allMyArticles.length / pageSize)) {
+                    myArticlePage = Math.max(1, Math.ceil(allMyArticles.length / pageSize));
+                }
+                renderMyArticlesPage();
+                document.getElementById('statArticles').textContent = allMyArticles.length;
+                const totalViews = allMyArticles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
+                document.getElementById('statViews').textContent = totalViews;
+            } else {
+                showToast('删除失败: ' + res.message, 'error');
+            }
+        }
+
+        // 更新个人信息
+        async function updateProfile() {
+            const username = document.getElementById('username').value.trim();
+            const bio = document.getElementById('bio').value.trim();
+            const btn = document.getElementById('saveProfileBtn');
+
+            if (!username) {
+                showMsg('error', '用户名不能为空');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const res = await UserAPI.updateProfile({ username, bio });
+
+            btn.disabled = false;
+            btn.textContent = '💾 保存修改';
+
+            if (res.success) {
+                showMsg('success', '✅ 个人信息更新成功');
+                document.getElementById('profileName').textContent = username;
+                document.getElementById('profileBio').textContent = bio || '这个人很懒，什么都没写...';
+                document.getElementById('profileAvatar').src = getAvatarUrl(username, 100);
+                const user = getUserInfo();
+                user.username = username;
+                user.bio = bio;
+                localStorage.setItem('user', JSON.stringify(user));
+                renderNavbar();
+            } else {
+                showMsg('error', res.message);
+            }
+        }
+
+        // 修改密码
+        async function updatePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('updatePwdBtn');
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showPwdMsg('error', '请填写所有密码字段');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showPwdMsg('error', '新密码长度不能少于6位');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showPwdMsg('error', '两次输入的新密码不一致');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '修改中...';
+
+            const res = await UserAPI.updatePassword({ oldPassword, newPassword });
+
+            btn.disabled = false;
+            btn.textContent = '🔐 修改密码';
+
+            if (res.success) {
+                showPwdMsg('success', '✅ 密码修改成功');
+                document.getElementById('oldPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                document.getElementById('pwdStrength').style.width = '0';
+            } else {
+                showPwdMsg('error', res.message);
+            }
+        }
+
+        function showMsg(type, text) {
+            const el = document.getElementById(type === 'error' ? 'errorMsg' : 'successMsg');
+            el.textContent = text;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function showPwdMsg(type, text) {
+            const el = document.getElementById(type === 'error' ? 'pwdErrorMsg' : 'pwdSuccessMsg');
+            el.textContent = text;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        init();
+    </script>
+</body>
+</html>

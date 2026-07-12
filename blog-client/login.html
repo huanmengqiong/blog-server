@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 我的博客</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 密码输入框容器 */
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+        .password-wrapper .toggle-pwd {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: #999;
+            user-select: none;
+            transition: color 0.3s;
+        }
+        .password-wrapper .toggle-pwd:hover {
+            color: #3498db;
+        }
+
+        /* 输入框校验状态 */
+        .form-group input.valid {
+            border-color: #2ecc71 !important;
+            background: #f0fff4 !important;
+        }
+        .form-group input.invalid {
+            border-color: #e74c3c !important;
+            background: #fff5f5 !important;
+        }
+
+        /* 校验提示 */
+        .validation-hint {
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .validation-hint.error {
+            color: #e74c3c;
+            display: block;
+        }
+        .validation-hint.success {
+            color: #2ecc71;
+            display: block;
+        }
+
+        /* 切换动画 */
+        .auth-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .auth-card.switch-out {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        .auth-card.switch-in {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+
+        /* 强度条 */
+        .strength-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 6px;
+            transition: all 0.3s;
+        }
+        .strength-weak { width: 30%; background: #e74c3c; }
+        .strength-medium { width: 60%; background: #f39c12; }
+        .strength-strong { width: 100%; background: #2ecc71; }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="auth-page">
+        <!-- 登录表单 -->
+        <div class="auth-card" id="loginForm">
+            <h2>🔐 欢迎回来</h2>
+            <p class="subtitle">登录你的博客账号</p>
+            <div class="error-message" id="loginError"></div>
+            
+            <div class="form-group">
+                <label>📧 邮箱</label>
+                <input type="email" id="loginEmail" placeholder="请输入邮箱地址" autocomplete="email">
+                <span class="validation-hint" id="loginEmailHint"></span>
+            </div>
+
+            <div class="form-group">
+                <label>🔒 密码</label>
+                <div class="password-wrapper">
+                    <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+                    <span class="toggle-pwd" onclick="togglePassword('loginPassword', this)">👁️</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">登 录</button>
+            </div>
+
+            <p class="form-switch">
+                还没有账号？<a onclick="switchForm('register')">立即注册 →</a>
+            </p>
+            <p class="form-switch" style="font-size:12px;color:#bbb;margin-top:12px;">
+                测试账号: zhangsan@example.com / 123456
+            </p>
+        </div>
+
+        <!-- 注册表单 -->
+        <div class="auth-card" id="registerForm" style="display:none;">
+            <h2>📝 创建账号</h2>
+            <p class="subtitle">加入我们，开始写作之旅</p>
+            <div class="error-message" id="registerError"></div>
+            <div class="success-message" id="registerSuccess"></div>
+
+            <div class="form-group">
+                <label>👤 用户名</label>
+                <input type="text" id="registerUsername" placeholder="请输入用户名（2-20位）" autocomplete="username">
+                <span class="validation-hint" id="usernameHint"></span>
+            </div>
+
+            <div class="form-group">
+                <label>📧 邮箱</label>
+                <input type="email" id="registerEmail" placeholder="请输入邮箱地址" autocomplete="email">
+                <span class="validation-hint" id="registerEmailHint"></span>
+            </div>
+
+            <div class="form-group">
+                <label>🔒 密码</label>
+                <div class="password-wrapper">
+                    <input type="password" id="registerPassword" placeholder="请输入密码（至少6位）" autocomplete="new-password">
+                    <span class="toggle-pwd" onclick="togglePassword('registerPassword', this)">👁️</span>
+                </div>
+                <div id="strengthBar" style="width:0%;height:4px;border-radius:2px;transition:all 0.3s;margin-top:4px;"></div>
+                <span class="validation-hint" id="passwordHint"></span>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" id="registerBtn" onclick="handleRegister()">注 册</button>
+            </div>
+
+            <p class="form-switch">
+                已有账号？<a onclick="switchForm('login')">返回登录 →</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 我的博客</p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        renderNavbar();
+
+        if (isLoggedIn()) {
+            window.location.href = 'index.html';
+        }
+
+        // ========== 密码显隐切换 ==========
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        }
+
+        // ========== 切换表单 ==========
+        function switchForm(type) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (type === 'register') {
+                loginForm.classList.add('switch-out');
+                setTimeout(() => {
+                    loginForm.style.display = 'none';
+                    loginForm.classList.remove('switch-out');
+                    registerForm.style.display = 'block';
+                    registerForm.classList.add('switch-in');
+                    setTimeout(() => registerForm.classList.remove('switch-in'), 50);
+                }, 300);
+            } else {
+                registerForm.classList.add('switch-out');
+                setTimeout(() => {
+                    registerForm.style.display = 'none';
+                    registerForm.classList.remove('switch-out');
+                    loginForm.style.display = 'block';
+                    loginForm.classList.add('switch-in');
+                    setTimeout(() => loginForm.classList.remove('switch-in'), 50);
+                }, 300);
+            }
+            hideErrors();
+        }
+
+        function hideErrors() {
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('registerError').style.display = 'none';
+            document.getElementById('registerSuccess').style.display = 'none';
+        }
+
+        // ========== 登录 ==========
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            if (!email || !password) {
+                showError('loginError', '请填写邮箱和密码');
+                return;
+            }
+
+            // 按钮加载状态
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+            btn.classList.add('btn-loading');
+
+            const res = await UserAPI.login({ email, password });
+
+            btn.disabled = false;
+            btn.textContent = '登 录';
+            btn.classList.remove('btn-loading');
+
+            if (res.success) {
+                saveUserInfo(res.data);
+                showToast('登录成功，欢迎回来！', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 500);
+            } else {
+                showError('loginError', res.message);
+            }
+        }
+
+        // ========== 注册 ==========
+        async function handleRegister() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const btn = document.getElementById('registerBtn');
+
+            if (!username || !email || !password) {
+                showError('registerError', '请填写所有字段');
+                return;
+            }
+
+            if (username.length < 2 || username.length > 20) {
+                showError('registerError', '用户名长度应为2-20位');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError('registerError', '请输入有效的邮箱地址');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('registerError', '密码长度不能少于6位');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '注册中...';
+            btn.classList.add('btn-loading');
+
+            const res = await UserAPI.register({ username, email, password });
+
+            btn.disabled = false;
+            btn.textContent = '注 册';
+            btn.classList.remove('btn-loading');
+
+            if (res.success) {
+                showRegisterSuccess('🎉 注册成功！即将跳转登录...');
+                setTimeout(() => {
+                    switchForm('login');
+                    document.getElementById('loginEmail').value = email;
+                }, 1000);
+            } else {
+                showError('registerError', res.message);
+            }
+        }
+
+        // ========== 实时校验 ==========
+        // 邮箱格式
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // 登录邮箱校验
+        document.getElementById('loginEmail').addEventListener('input', function() {
+            const hint = document.getElementById('loginEmailHint');
+            if (!this.value) {
+                hint.className = 'validation-hint';
+                this.className = '';
+            } else if (isValidEmail(this.value)) {
+                hint.className = 'validation-hint success';
+                hint.textContent = '✓ 邮箱格式正确';
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+            } else {
+                hint.className = 'validation-hint error';
+                hint.textContent = '请输入有效的邮箱地址';
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            }
+        });
+
+        // 注册用户名校验
+        document.getElementById('registerUsername').addEventListener('input', function() {
+            const hint = document.getElementById('usernameHint');
+            if (!this.value) {
+                hint.className = 'validation-hint';
+                this.className = '';
+            } else if (this.value.length >= 2 && this.value.length <= 20) {
+                hint.className = 'validation-hint success';
+                hint.textContent = '✓ 用户名可用';
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+            } else {
+                hint.className = 'validation-hint error';
+                hint.textContent = '用户名长度应为2-20位';
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            }
+        });
+
+        // 注册邮箱校验
+        document.getElementById('registerEmail').addEventListener('input', function() {
+            const hint = document.getElementById('registerEmailHint');
+            if (!this.value) {
+                hint.className = 'validation-hint';
+                this.className = '';
+            } else if (isValidEmail(this.value)) {
+                hint.className = 'validation-hint success';
+                hint.textContent = '✓ 邮箱格式正确';
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+            } else {
+                hint.className = 'validation-hint error';
+                hint.textContent = '请输入有效的邮箱地址';
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            }
+        });
+
+        // 注册密码强度校验
+        document.getElementById('registerPassword').addEventListener('input', function() {
+            const hint = document.getElementById('passwordHint');
+            const bar = document.getElementById('strengthBar');
+            const val = this.value;
+
+            if (!val) {
+                hint.className = 'validation-hint';
+                bar.style.width = '0%';
+                this.className = '';
+            } else if (val.length < 6) {
+                hint.className = 'validation-hint error';
+                hint.textContent = '密码至少6位';
+                bar.style.width = '30%';
+                bar.style.background = '#e74c3c';
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            } else if (val.length < 10 || !/[A-Z]/.test(val) || !/[0-9]/.test(val)) {
+                hint.className = 'validation-hint success';
+                hint.textContent = '✓ 密码强度：中等（建议包含大写字母和数字）';
+                bar.style.width = '60%';
+                bar.style.background = '#f39c12';
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+            } else {
+                hint.className = 'validation-hint success';
+                hint.textContent = '✓ 密码强度：强';
+                bar.style.width = '100%';
+                bar.style.background = '#2ecc71';
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+            }
+        });
+
+        // ========== 提示 ==========
+        function showError(id, message) {
+            const el = document.getElementById(id);
+            el.textContent = '⚠️ ' + message;
+            el.style.display = 'block';
+        }
+
+        function showRegisterSuccess(message) {
+            const el = document.getElementById('registerSuccess');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // ========== 回车登录 ==========
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                if (document.getElementById('loginForm').style.display !== 'none') {
+                    handleLogin();
+                } else if (document.getElementById('registerForm').style.display !== 'none') {
+                    handleRegister();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

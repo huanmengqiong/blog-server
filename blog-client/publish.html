@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>写文章 - 我的博客</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 工具栏 */
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+        }
+        .editor-toolbar button {
+            padding: 4px 10px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .editor-toolbar button:hover {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        /* 预览区 */
+        .preview-area {
+            display: none;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 0 0 10px 10px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+        .preview-area.active {
+            display: block;
+        }
+        .preview-area h1 { font-size: 24px; margin-bottom: 12px; }
+        .preview-area h2 { font-size: 20px; margin: 16px 0 8px; }
+        .preview-area h3 { font-size: 17px; margin: 12px 0 6px; }
+        .preview-area p { margin-bottom: 12px; }
+        .preview-area code { background: #f0f0f5; padding: 2px 6px; border-radius: 4px; color: #e74c3c; }
+        .preview-area pre { background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        .preview-area blockquote { border-left: 3px solid #3498db; padding: 8px 16px; background: #f0f8ff; margin: 12px 0; }
+        .preview-area img { max-width: 100%; border-radius: 8px; }
+
+        /* 字数统计 */
+        .char-count {
+            font-size: 12px;
+            color: #bbb;
+            text-align: right;
+            margin-top: 4px;
+        }
+        .char-count.warn { color: #e74c3c; }
+
+        /* 操作按钮行 */
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .action-row .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-publish {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(52,152,219,0.3);
+        }
+        .btn-publish:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(52,152,219,0.4); }
+        .btn-draft {
+            background: #f0f0f0;
+            color: #555;
+        }
+        .btn-draft:hover { background: #e0e0e0; }
+        .btn-preview {
+            background: #fff;
+            color: #3498db;
+            border: 2px solid #3498db !important;
+        }
+        .btn-preview:hover { background: #f0f8ff; }
+        .btn-preview.active { background: #3498db; color: #fff; }
+
+        /* 恢复提示 */
+        .restore-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .restore-banner button {
+            padding: 4px 12px;
+            background: #ffc107;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="container publish-page">
+        <h2 id="pageTitle">✍️ 写文章</h2>
+
+        <div class="publish-card">
+            <!-- 恢复草稿提示 -->
+            <div class="restore-banner" id="restoreBanner" style="display:none;">
+                <span>📝 检测到未保存的草稿</span>
+                <span>
+                    <button onclick="restoreDraft()">恢复草稿</button>
+                    <button onclick="clearDraft()" style="background:#e0e0e0;">忽略</button>
+                </span>
+            </div>
+
+            <div class="success-message" id="successMsg"></div>
+            <div class="error-message" id="errorMsg"></div>
+
+            <input type="hidden" id="editId">
+
+            <div class="form-group">
+                <label>📌 文章标题 *</label>
+                <input type="text" id="title" placeholder="输入一个吸引人的标题..." maxlength="200">
+                <div class="char-count"><span id="titleCount">0</span>/200</div>
+            </div>
+
+            <div class="form-group">
+                <label>🖼️ 封面图 URL</label>
+                <input type="text" id="coverImage" placeholder="输入图片链接（可选）">
+            </div>
+
+            <div class="form-group">
+                <label>📝 文章摘要</label>
+                <input type="text" id="summary" placeholder="简要描述文章内容（可选）" maxlength="300">
+                <div class="char-count"><span id="summaryCount">0</span>/300</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="form-group">
+                    <label>📁 分类</label>
+                    <select id="categoryId">
+                        <option value="">选择分类</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>🏷️ 标签</label>
+                    <div class="tag-checkboxes" id="tagCheckboxes">
+                        <span style="color:#bbb;">加载中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📄 文章内容 *</label>
+                <!-- 编辑工具栏 -->
+                <div class="editor-toolbar">
+                    <button onclick="insertMarkdown('**', '**')" title="加粗">B</button>
+                    <button onclick="insertMarkdown('*', '*')" title="斜体"><i>I</i></button>
+                    <button onclick="insertMarkdown('`', '`')" title="行内代码">&lt;/&gt;</button>
+                    <button onclick="insertMarkdown('\n## ', '')" title="二级标题">H2</button>
+                    <button onclick="insertMarkdown('\n### ', '')" title="三级标题">H3</button>
+                    <button onclick="insertMarkdown('\n> ', '')" title="引用">❝</button>
+                    <button onclick="insertMarkdown('\n- ', '')" title="列表">≡</button>
+                    <button onclick="insertMarkdown('\n```\n', '\n```')" title="代码块">{ }</button>
+                    <button onclick="insertMarkdown('[', '](url)')" title="链接">🔗</button>
+                </div>
+                <textarea id="content" placeholder="在这里写下你的精彩内容...&#10;&#10;支持 Markdown 语法：&#10;## 标题&#10;**加粗** *斜体* &#10;- 列表&#10;> 引用&#10;```代码块```"></textarea>
+                <div class="char-count"><span id="contentCount">0</span> 字</div>
+                <!-- 预览区 -->
+                <div class="preview-area" id="previewArea"></div>
+            </div>
+
+            <div class="action-row">
+                <button class="btn btn-draft" id="draftBtn" onclick="saveDraft()">💾 保存草稿</button>
+                <button class="btn btn-preview" id="previewBtn" onclick="togglePreview()">👁️ 预览</button>
+                <button class="btn btn-publish" id="submitBtn" onclick="submitArticle('published')">🚀 发布文章</button>
+            </div>
+
+            <p style="text-align:center;color:#bbb;font-size:12px;margin-top:12px;">
+                快捷键: Ctrl+S 保存草稿 | Ctrl+Enter 发布
+            </p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 我的博客</p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let isEditMode = false;
+        let editArticleId = null;
+        let allTags = [];
+        let autoSaveTimer = null;
+        let isDirty = false;
+        let isPreview = false;
+
+        async function init() {
+            renderNavbar();
+
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            await loadCategories();
+            await loadTags();
+
+            // 编辑模式
+            const id = getUrlParam('id');
+            if (id) {
+                isEditMode = true;
+                editArticleId = parseInt(id);
+                document.getElementById('pageTitle').textContent = '✏️ 编辑文章';
+                document.getElementById('submitBtn').textContent = '💾 更新文章';
+                document.getElementById('draftBtn').style.display = 'none';
+                await loadArticle(editArticleId);
+            } else {
+                // 检查草稿
+                checkDraft();
+            }
+
+            bindEvents();
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 字数统计
+            document.getElementById('title').addEventListener('input', updateCounts);
+            document.getElementById('summary').addEventListener('input', updateCounts);
+            document.getElementById('content').addEventListener('input', () => {
+                updateCounts();
+                if (isPreview) updatePreview();
+                isDirty = true;
+            });
+
+            // 自动保存
+            document.getElementById('title').addEventListener('input', () => isDirty = true);
+            document.getElementById('summary').addEventListener('input', () => isDirty = true);
+
+            // 离开确认
+            window.addEventListener('beforeunload', (e) => {
+                if (isDirty && !isEditMode) {
+                    autoSaveToLocal();
+                }
+            });
+
+            // 快捷键
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    if (!isEditMode) saveDraft();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    submitArticle('published');
+                }
+            });
+
+            // 自动保存定时器
+            autoSaveTimer = setInterval(() => {
+                if (isDirty && !isEditMode) {
+                    autoSaveToLocal();
+                }
+            }, 30000);
+        }
+
+        // 更新字数统计
+        function updateCounts() {
+            const titleLen = document.getElementById('title').value.length;
+            const summaryLen = document.getElementById('summary').value.length;
+            const contentLen = document.getElementById('content').value.length;
+
+            document.getElementById('titleCount').textContent = titleLen;
+            document.getElementById('summaryCount').textContent = summaryLen;
+            document.getElementById('contentCount').textContent = contentLen;
+
+            document.getElementById('titleCount').className = titleLen > 180 ? 'warn' : '';
+        }
+
+        // 插入 Markdown
+        function insertMarkdown(before, after) {
+            const textarea = document.getElementById('content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const selected = text.substring(start, end);
+            const replacement = before + selected + after;
+            textarea.value = text.substring(0, start) + replacement + text.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+            updateCounts();
+            if (isPreview) updatePreview();
+            isDirty = true;
+        }
+
+        // 切换预览
+        function togglePreview() {
+            isPreview = !isPreview;
+            const textarea = document.getElementById('content');
+            const preview = document.getElementById('previewArea');
+            const btn = document.getElementById('previewBtn');
+
+            if (isPreview) {
+                textarea.style.display = 'none';
+                preview.classList.add('active');
+                btn.classList.add('active');
+                btn.textContent = '✏️ 编辑';
+                updatePreview();
+            } else {
+                textarea.style.display = 'block';
+                preview.classList.remove('active');
+                btn.classList.remove('active');
+                btn.textContent = '👁️ 预览';
+            }
+        }
+
+        // 更新预览
+        function updatePreview() {
+            const content = document.getElementById('content').value;
+            document.getElementById('previewArea').innerHTML = formatPreview(content);
+        }
+
+        function formatPreview(content) {
+            if (!content) return '<p style="color:#ccc;">暂无内容</p>';
+            return content
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+                .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // 本地自动保存
+        function autoSaveToLocal() {
+            const draft = {
+                title: document.getElementById('title').value,
+                summary: document.getElementById('summary').value,
+                content: document.getElementById('content').value,
+                coverImage: document.getElementById('coverImage').value,
+                categoryId: document.getElementById('categoryId').value,
+                time: new Date().toISOString(),
+            };
+            localStorage.setItem('article_draft', JSON.stringify(draft));
+            console.log('草稿已自动保存');
+        }
+
+        // 保存草稿（手动）
+        function saveDraft() {
+            autoSaveToLocal();
+            showToast('草稿已保存到本地', 'success');
+        }
+
+        // 检查草稿
+        function checkDraft() {
+            const draftStr = localStorage.getItem('article_draft');
+            if (draftStr) {
+                const draft = JSON.parse(draftStr);
+                if (draft.title || draft.content) {
+                    document.getElementById('restoreBanner').style.display = 'flex';
+                }
+            }
+        }
+
+        // 恢复草稿
+        function restoreDraft() {
+            const draftStr = localStorage.getItem('article_draft');
+            if (draftStr) {
+                const draft = JSON.parse(draftStr);
+                document.getElementById('title').value = draft.title || '';
+                document.getElementById('summary').value = draft.summary || '';
+                document.getElementById('content').value = draft.content || '';
+                document.getElementById('coverImage').value = draft.coverImage || '';
+                if (draft.categoryId) document.getElementById('categoryId').value = draft.categoryId;
+                updateCounts();
+                showToast('草稿已恢复', 'success');
+            }
+            document.getElementById('restoreBanner').style.display = 'none';
+        }
+
+        // 清除草稿
+        function clearDraft() {
+            localStorage.removeItem('article_draft');
+            document.getElementById('restoreBanner').style.display = 'none';
+        }
+
+        // 加载分类
+        async function loadCategories() {
+            const res = await CategoryAPI.getAll();
+            if (res.success) {
+                const select = document.getElementById('categoryId');
+                res.data.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = `📁 ${cat.name}`;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // 加载标签
+        async function loadTags() {
+            const res = await TagAPI.getAll();
+            if (res.success) {
+                allTags = res.data;
+                renderTagCheckboxes([]);
+            }
+        }
+
+        function renderTagCheckboxes(selectedIds) {
+            const container = document.getElementById('tagCheckboxes');
+            container.innerHTML = allTags.map(tag => `
+                <label class="${selectedIds.includes(tag.id) ? 'checked' : ''}">
+                    <input type="checkbox" value="${tag.id}" ${selectedIds.includes(tag.id) ? 'checked' : ''}>
+                    <span>${tag.name}</span>
+                </label>
+            `).join('');
+        }
+
+        // 加载文章
+        async function loadArticle(id) {
+            const res = await ArticleAPI.getDetail(id);
+
+            if (res.success) {
+                const article = res.data;
+                const user = getUserInfo();
+                if (article.author.id !== user.id) {
+                    showToast('无权编辑他人的文章', 'error');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                document.getElementById('editId').value = article.id;
+                document.getElementById('title').value = article.title;
+                document.getElementById('summary').value = article.summary || '';
+                document.getElementById('content').value = article.content;
+                document.getElementById('coverImage').value = article.coverImage || '';
+
+                if (article.category) {
+                    document.getElementById('categoryId').value = article.category.id;
+                }
+
+                const tagIds = article.tags.map(t => t.id);
+                renderTagCheckboxes(tagIds);
+                updateCounts();
+            } else {
+                showMessage('error', '加载文章失败: ' + res.message);
+            }
+        }
+
+        // 提交文章
+        async function submitArticle(status) {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const summary = document.getElementById('summary').value.trim();
+            const categoryId = document.getElementById('categoryId').value;
+            const coverImage = document.getElementById('coverImage').value.trim();
+            const btn = document.getElementById('submitBtn');
+
+            if (!title || !content) {
+                showMessage('error', '标题和内容不能为空');
+                return;
+            }
+
+            const checkedTags = document.querySelectorAll('#tagCheckboxes input:checked');
+            const tagIds = Array.from(checkedTags).map(cb => parseInt(cb.value));
+
+            const data = {
+                title,
+                content,
+                summary: summary || title,
+                coverImage: coverImage || null,
+                categoryId: categoryId ? parseInt(categoryId) : null,
+                tagIds,
+                status,
+            };
+
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+
+            let res;
+            if (isEditMode) {
+                res = await ArticleAPI.update(editArticleId, data);
+            } else {
+                res = await ArticleAPI.create(data);
+            }
+
+            btn.disabled = false;
+            btn.textContent = isEditMode ? '💾 更新文章' : '🚀 发布文章';
+
+            if (res.success) {
+                // 清除草稿
+                localStorage.removeItem('article_draft');
+                isDirty = false;
+                const msg = status === 'draft' ? '草稿已保存' : (isEditMode ? '文章更新成功' : '文章发布成功');
+                showMessage('success', `✅ ${msg}！即将跳转...`);
+                setTimeout(() => {
+                    window.location.href = `detail.html?id=${res.data.id}`;
+                }, 1500);
+            } else {
+                showMessage('error', '操作失败: ' + res.message);
+            }
+        }
+
+        function showMessage(type, text) {
+            const el = document.getElementById(type === 'error' ? 'errorMsg' : 'successMsg');
+            el.textContent = text;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
