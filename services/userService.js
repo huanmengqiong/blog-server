@@ -4,11 +4,8 @@ const pool = require('../config/db');
 require('dotenv').config();
 
 class UserService {
-    /**
-     * 用户注册
-     */
+
     async register({ username, email, password }) {
-    // 检查用户名或邮箱是否已存在
     const [existing] = await pool.query(
         'SELECT id FROM users WHERE username = ? OR email = ?',
         [username, email]
@@ -20,16 +17,13 @@ class UserService {
         throw error;
     }
 
-    // 明文存储密码
     const passwordHash = password;
 
-    // 插入用户
     const [result] = await pool.query(
         'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
         [username, email, passwordHash]
     );
 
-    // 查询新创建的用户
     const [users] = await pool.query(
         'SELECT id, username, email, avatar_url, bio, created_at FROM users WHERE id = ?',
         [result.insertId]
@@ -37,11 +31,7 @@ class UserService {
 
     return users[0];
 }
-    /**
-     * 用户登录
-     */
 async login(email, password) {
-    // 查询用户
     const [users] = await pool.query(
         'SELECT * FROM users WHERE email = ?',
         [email]
@@ -55,14 +45,12 @@ async login(email, password) {
 
     const user = users[0];
 
-    // 明文比对密码
     if (password !== user.password_hash) {
         const error = new Error('邮箱或密码错误');
         error.statusCode = 401;
         throw error;
     }
 
-    // 生成 JWT
     const token = jwt.sign(
         { id: user.id, username: user.username, email: user.email },
         process.env.JWT_SECRET,
@@ -82,9 +70,6 @@ async login(email, password) {
     };
 }
 
-    /**
-     * 获取用户信息
-     */
     async getProfile(userId) {
         const [users] = await pool.query(
             'SELECT id, username, email, avatar_url, bio, created_at FROM users WHERE id = ?',
@@ -100,9 +85,6 @@ async login(email, password) {
         return users[0];
     }
 
-    /**
-     * 更新用户信息
-     */
     async updateProfile(userId, updateData) {
         const allowedFields = ['username', 'avatar_url', 'bio'];
         const updates = [];
@@ -130,7 +112,6 @@ async login(email, password) {
         return this.getProfile(userId);
     }
     async updatePassword(userId, oldPassword, newPassword) {
-    // 查询用户
     const [users] = await pool.query(
         'SELECT * FROM users WHERE id = ?',
         [userId]
@@ -144,14 +125,12 @@ async login(email, password) {
 
     const user = users[0];
 
-    // 验证原密码
     if (oldPassword !== user.password_hash) {
         const error = new Error('原密码错误');
         error.statusCode = 400;
         throw error;
     }
 
-    // 更新密码
     await pool.query(
         'UPDATE users SET password_hash = ? WHERE id = ?',
         [newPassword, userId]

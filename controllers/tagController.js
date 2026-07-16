@@ -2,9 +2,7 @@ const tagService = require('../services/tagService');
 const ResponseHelper = require('../utils/responseHelper');
 
 class TagController {
-    /**
-     * 获取所有标签
-     */
+    
     async getAll(req, res, next) {
         try {
             const tags = await tagService.getAll();
@@ -14,9 +12,6 @@ class TagController {
         }
     }
 
-    /**
-     * 创建标签
-     */
     async create(req, res, next) {
         try {
             const { name } = req.body;

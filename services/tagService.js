@@ -1,9 +1,7 @@
 const pool = require('../config/db');
 
 class TagService {
-    /**
-     * 获取所有标签（含文章数量）
-     */
+    
     async getAll() {
         const [tags] = await pool.query(`
             SELECT 
@@ -25,9 +23,6 @@ class TagService {
         }));
     }
 
-    /**
-     * 创建标签
-     */
     async create(name) {
         const [result] = await pool.query(
             'INSERT INTO tags (name) VALUES (?)',

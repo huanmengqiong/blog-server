@@ -2,9 +2,7 @@ const categoryService = require('../services/categoryService');
 const ResponseHelper = require('../utils/responseHelper');
 
 class CategoryController {
-    /**
-     * 获取所有分类
-     */
+    
     async getAll(req, res, next) {
         try {
             const categories = await categoryService.getAll();
@@ -14,9 +12,6 @@ class CategoryController {
         }
     }
 
-    /**
-     * 创建分类
-     */
     async create(req, res, next) {
         try {
             const { name, description } = req.body;

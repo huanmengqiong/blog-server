@@ -13,7 +13,6 @@ const pool = mysql.createPool({
     charset: 'utf8mb4'
 });
 
-// 测试数据库连接
 pool.getConnection()
     .then(connection => {
         console.log('数据库连接成功');

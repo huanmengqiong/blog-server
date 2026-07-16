@@ -1,6 +1,6 @@
 const ResponseHelper = require('../utils/responseHelper');
 
-/**
+
  * 参数校验中间件工厂函数
  */
 const validate = (schema, property = 'body') => {

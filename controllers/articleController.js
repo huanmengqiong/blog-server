@@ -2,9 +2,7 @@ const articleService = require('../services/articleService');
 const ResponseHelper = require('../utils/responseHelper');
 
 class ArticleController {
-    /**
-     * 获取文章列表（支持分页、筛选、搜索、排序）
-     */
+    
     async getList(req, res, next) {
         try {
             const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -13,7 +11,7 @@ class ArticleController {
             const tagId = req.query.tagId ? parseInt(req.query.tagId) : null;
             const status = req.query.status || 'published';
             const keyword = req.query.keyword || null;
-            const sort = req.query.sort || 'latest'; // latest / popular / most_viewed
+            const sort = req.query.sort || 'latest';
 
             const result = await articleService.getList({
                 page, limit, categoryId, tagId, status, keyword, sort
@@ -27,9 +25,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 获取文章详情
-     */
     async getDetail(req, res, next) {
         try {
             const articleId = parseInt(req.params.id);
@@ -44,9 +39,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 创建文章
-     */
     async create(req, res, next) {
         try {
             const { title, content, summary, coverImage, categoryId, tagIds, status } = req.body;
@@ -78,9 +70,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 更新文章
-     */
     async update(req, res, next) {
         try {
             const articleId = parseInt(req.params.id);
@@ -93,7 +82,6 @@ class ArticleController {
                 userId: req.user.id
             };
 
-            // 清除空字符串
             Object.keys(updateData).forEach(key => {
                 if (updateData[key] === '') {
                     delete updateData[key];
@@ -107,9 +95,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 删除文章
-     */
     async remove(req, res, next) {
         try {
             const articleId = parseInt(req.params.id);
@@ -124,9 +109,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 点赞/取消点赞
-     */
     async toggleLike(req, res, next) {
         try {
             const articleId = parseInt(req.params.id);
@@ -145,9 +127,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 获取点赞状态
-     */
     async getLikeStatus(req, res, next) {
         try {
             const articleId = parseInt(req.params.id);
@@ -162,9 +141,6 @@ class ArticleController {
         }
     }
 
-    /**
-     * 文章归档
-     */
     async getArchives(req, res, next) {
         try {
             const archives = await articleService.getArchives();

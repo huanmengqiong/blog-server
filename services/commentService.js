@@ -1,9 +1,7 @@
 const pool = require('../config/db');
 
 class CommentService {
-    /**
-     * 获取文章评论列表
-     */
+    
     async getByArticleId(articleId) {
         const [comments] = await pool.query(`
             SELECT 
@@ -33,11 +31,8 @@ class CommentService {
         }));
     }
 
-    /**
-     * 创建评论
-     */
     async create({ content, articleId, parentId, userId }) {
-        // 检查文章是否存在
+        
         const [articles] = await pool.query(
             'SELECT id FROM articles WHERE id = ?',
             [articleId]
@@ -49,7 +44,6 @@ class CommentService {
             throw error;
         }
 
-        // 如果有父评论，检查父评论是否存在
         if (parentId) {
             const [parentComments] = await pool.query(
                 'SELECT id FROM comments WHERE id = ? AND article_id = ?',
@@ -68,7 +62,6 @@ class CommentService {
             [content, articleId, userId, parentId]
         );
 
-        // 查询创建的评论
         const [comments] = await pool.query(`
             SELECT 
                 c.id,
@@ -97,9 +90,6 @@ class CommentService {
         };
     }
 
-    /**
-     * 删除评论
-     */
     async remove(commentId, userId) {
         const [comments] = await pool.query(
             'SELECT * FROM comments WHERE id = ?',

@@ -1,9 +1,7 @@
 const pool = require('../config/db');
 
 class ArticleService {
-    /**
-     * 获取文章列表（分页+筛选+搜索+排序）
-     */
+    
     async getList({ page, limit, categoryId, tagId, status, keyword, sort }) {
         const offset = (page - 1) * limit;
         let whereConditions = ['a.status = ?'];
@@ -19,7 +17,6 @@ class ArticleService {
             params.push(tagId);
         }
 
-        // 关键词搜索
         if (keyword) {
             whereConditions.push('(a.title LIKE ? OR a.summary LIKE ?)');
             params.push(`%${keyword}%`, `%${keyword}%`);
@@ -27,7 +24,6 @@ class ArticleService {
 
         const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
 
-        // 查询总数
         let countSql = `
             SELECT COUNT(DISTINCT a.id) as total
             FROM articles a
@@ -38,7 +34,6 @@ class ArticleService {
         const [countResult] = await pool.query(countSql, params);
         const total = countResult[0].total;
 
-        // 排序
         let orderBy = 'a.created_at DESC';
         if (sort === 'popular') {
             orderBy = 'a.like_count DESC, a.created_at DESC';
@@ -46,7 +41,6 @@ class ArticleService {
             orderBy = 'a.view_count DESC, a.created_at DESC';
         }
 
-        // 查询列表
         let listSql = `
             SELECT 
                 a.id,
@@ -82,9 +76,6 @@ class ArticleService {
         return { list: this.formatArticles(list), total };
     }
 
-    /**
-     * 获取文章详情
-     */
     async getDetail(articleId) {
         const [articles] = await pool.query(`
             SELECT 
@@ -109,7 +100,6 @@ class ArticleService {
 
         const article = articles[0];
 
-        // 查询标签
         const [tags] = await pool.query(`
             SELECT t.id, t.name 
             FROM tags t
@@ -117,7 +107,6 @@ class ArticleService {
             WHERE at2.article_id = ?
         `, [articleId]);
 
-        // 增加浏览次数
         await pool.query('UPDATE articles SET view_count = view_count + 1 WHERE id = ?', [articleId]);
 
         return {
@@ -145,9 +134,6 @@ class ArticleService {
         };
     }
 
-    /**
-     * 创建文章
-     */
     async create({ title, content, summary, coverImage, categoryId, tagIds, status, userId }) {
         const connection = await pool.getConnection();
         
@@ -179,9 +165,6 @@ class ArticleService {
         }
     }
 
-    /**
-     * 更新文章
-     */
     async update(articleId, updateData) {
         const [articles] = await pool.query(
             'SELECT * FROM articles WHERE id = ?',
@@ -263,9 +246,6 @@ class ArticleService {
         }
     }
 
-    /**
-     * 删除文章
-     */
     async remove(articleId, userId) {
         const [articles] = await pool.query(
             'SELECT * FROM articles WHERE id = ?',
@@ -287,9 +267,6 @@ class ArticleService {
         await pool.query('DELETE FROM articles WHERE id = ?', [articleId]);
     }
 
-    /**
-     * 点赞/取消点赞
-     */
     async toggleLike(articleId, userId) {
         const [articles] = await pool.query('SELECT id FROM articles WHERE id = ?', [articleId]);
         if (articles.length === 0) {
@@ -326,9 +303,6 @@ class ArticleService {
         }
     }
 
-    /**
-     * 获取点赞状态
-     */
     async getLikeStatus(articleId, userId) {
         const [existing] = await pool.query(
             'SELECT id FROM article_likes WHERE article_id = ? AND user_id = ?',
@@ -346,9 +320,6 @@ class ArticleService {
         };
     }
 
-    /**
-     * 文章归档
-     */
     async getArchives() {
         const [rows] = await pool.query(`
             SELECT 
@@ -366,9 +337,6 @@ class ArticleService {
         }));
     }
 
-    /**
-     * 格式化文章列表数据
-     */
     formatArticles(articles) {
         return articles.map(article => ({
             id: article.id,

@@ -2,9 +2,7 @@ const commentService = require('../services/commentService');
 const ResponseHelper = require('../utils/responseHelper');
 
 class CommentController {
-    /**
-     * 获取文章评论列表
-     */
+    
     async getByArticleId(req, res, next) {
         try {
             const articleId = parseInt(req.params.articleId);
@@ -15,9 +13,6 @@ class CommentController {
         }
     }
 
-    /**
-     * 创建评论
-     */
     async create(req, res, next) {
         try {
             const { content, articleId, parentId } = req.body;
@@ -39,9 +34,6 @@ class CommentController {
         }
     }
 
-    /**
-     * 删除评论
-     */
     async remove(req, res, next) {
         try {
             const commentId = parseInt(req.params.id);

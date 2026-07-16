@@ -1,27 +1,17 @@
-/**
- * 工具函数
- */
-
-// ========== 用户相关 ==========
-
-// 检查是否已登录
 function isLoggedIn() {
     return !!localStorage.getItem('token');
 }
 
-// 获取当前用户信息
 function getUserInfo() {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
 }
 
-// 保存用户信息
 function saveUserInfo(user) {
     localStorage.setItem('token', user.token);
     localStorage.setItem('user', JSON.stringify(user.user));
 }
 
-// 退出登录
 function logout() {
     if (confirm('确定要退出登录吗？')) {
         localStorage.removeItem('token');
@@ -30,9 +20,6 @@ function logout() {
     }
 }
 
-// ========== 时间格式化 ==========
-
-// 格式化完整时间
 function formatTime(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -46,7 +33,6 @@ function formatTime(dateStr) {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
-// 相对时间（更友好）
 function formatRelativeTime(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -69,17 +55,11 @@ function formatRelativeTime(dateStr) {
     return `${Math.floor(days / 365)}年前`;
 }
 
-// ========== URL 工具 ==========
-
-// 获取 URL 参数
 function getUrlParam(name) {
     const params = new URLSearchParams(window.location.search);
     return params.get(name);
 }
 
-// ========== 头像生成 ==========
-
-// 根据用户名生成默认头像
 function getAvatarUrl(username, size = 40) {
     if (!username) return '';
     const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#1abc9c'];
@@ -93,10 +73,7 @@ function getAvatarUrl(username, size = 40) {
     return 'data:image/svg+xml,' + encodeURIComponent(svg);
 }
 
-// ========== Toast 消息 ==========
-
 function showToast(message, type = 'success', duration = 3000) {
-    // 创建容器
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -104,7 +81,6 @@ function showToast(message, type = 'success', duration = 3000) {
         document.body.appendChild(container);
     }
 
-    // 图标
     const icons = {
         success: '✅',
         error: '❌',
@@ -112,13 +88,11 @@ function showToast(message, type = 'success', duration = 3000) {
         info: 'ℹ️'
     };
 
-    // 创建消息
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `<span>${icons[type] || ''} ${message}</span>`;
     container.appendChild(toast);
 
-    // 自动移除
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
@@ -131,9 +105,6 @@ function showToast(message, type = 'success', duration = 3000) {
     }, duration);
 }
 
-// ========== 防抖节流 ==========
-
-// 防抖
 function debounce(fn, delay = 300) {
     let timer = null;
     return function (...args) {
@@ -142,7 +113,6 @@ function debounce(fn, delay = 300) {
     };
 }
 
-// 节流
 function throttle(fn, delay = 300) {
     let last = 0;
     return function (...args) {
@@ -154,16 +124,12 @@ function throttle(fn, delay = 300) {
     };
 }
 
-// ========== HTML 安全 ==========
-
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
-// ========== 导航栏渲染 ==========
 
 function renderNavbar() {
     const navbar = document.getElementById('navbar');
@@ -195,16 +161,12 @@ function renderNavbar() {
     `;
 }
 
-// ========== 确认对话框 ==========
-
 function confirmDialog(message, title = '提示') {
     return new Promise((resolve) => {
         const result = confirm(title + '\n\n' + message);
         resolve(result);
     });
 }
-
-// ========== 页面加载动画 ==========
 
 function showPageLoading(show = true) {
     let loader = document.getElementById('pageLoader');

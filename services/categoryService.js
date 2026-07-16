@@ -1,9 +1,7 @@
 const pool = require('../config/db');
 
 class CategoryService {
-    /**
-     * 获取所有分类（含文章数量）
-     */
+    
     async getAll() {
         const [categories] = await pool.query(`
             SELECT 
@@ -27,9 +25,6 @@ class CategoryService {
         }));
     }
 
-    /**
-     * 创建分类
-     */
     async create({ name, description }) {
         const [result] = await pool.query(
             'INSERT INTO categories (name, description) VALUES (?, ?)',

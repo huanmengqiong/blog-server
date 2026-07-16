@@ -1,10 +1,5 @@
-/**
- * 统一响应格式工具
- */
 class ResponseHelper {
-    /**
-     * 成功响应
-     */
+    
     static success(res, data = null, message = '操作成功', statusCode = 200) {
         return res.status(statusCode).json({
             success: true,
@@ -14,9 +9,6 @@ class ResponseHelper {
         });
     }
 
-    /**
-     * 失败响应
-     */
     static error(res, message = '服务器内部错误', statusCode = 500, error = null) {
         return res.status(statusCode).json({
             success: false,
@@ -26,9 +18,6 @@ class ResponseHelper {
         });
     }
 
-    /**
-     * 分页响应
-     */
     static pagination(res, list, total, page, limit, message = '查询成功') {
         return res.status(200).json({
             success: true,
